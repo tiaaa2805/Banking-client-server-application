@@ -1,0 +1,55 @@
+# 🏦 Distributed Banking System (Java RMI Implementation)
+
+## 📌 Overview
+This repository contains a robust, concurrent client-server banking application built using native **Java RMI (Remote Method Invocation)**. The system isolates business logic and financial records on a centralized server while exposing specific transaction endpoints to remote clients. 
+
+The application implements a thread-safe, memory-based account management system designed to process financial requests from multiple concurrent clients seamlessly.
+
+---
+
+## 🏗️ Architecture & Component Design
+
+The system employs a classic **Centralized Object Server** pattern. Rather than exporting every single bank account over the network (which risks exhausting sockets and registry overhead), a single high-performance facade service is exposed.
+
+### 🧩 Key Components
+* **`Account` (Data Model):** A standard, serializable Plain Old Java Object (`POJO`) containing `iban` and `balance`. It resides exclusively within the server's JVM memory inside a managed cache.
+* **`BankService` (Remote Interface):** The core contract extending `java.rmi.Remote`. It defines the boundary of available operations: `deposit`, `withdraw`, `transfer`, and `queryBalance`.
+* **`BankServiceImpl` (Remote Servant):** The concrete servant extending `UnicastRemoteObject`. It manages the underlying account persistence layer using a high-concurrency collection.
+* **`RMIServer` (Registry & Bootstrapper):** Instantiates the remote object, instantiates the local RMI Registry daemon on port `1099`, and binds the remote reference.
+* **`RMIClient` (Remote Client Application):** Discovers the server stub using the naming lookup protocol and executes integration tests simulating user behaviors.
+
+---
+
+## 🔒 Concurrency & Thread Safety
+
+Because Java RMI spawns a new worker thread from a thread pool for each incoming client connection, the server implementation applies strict synchronization mechanisms:
+
+1.  **State Protection:** Individual mutations inside the `Account` instance (`deposit` and `withdraw`) utilize intrinsic locks (`synchronized` keywords) to maintain state consistency under intense race conditions.
+2.  **Thread-Safe Caching:** Accounts are retained globally inside a `ConcurrentHashMap` to ensure memory visibility and safe reads across decoupled threads.
+3.  **Deadlock Prevention:** The `transfer` operation locks both the source and destination account resources. To prevent deadly embraces (Deadlocks) when inverted transfers happen concurrently, the locks are dynamically acquired in a strict alphanumeric order determined by their `IBAN` strings.
+
+---
+
+## 🚀 Getting Started & Execution
+
+### Prerequisites
+* Java SE Development Kit (JDK) 17 or higher.
+* A Java compiler or preferred IDE (IntelliJ IDEA, Eclipse, NetBeans).
+
+### Run Instructions
+
+1.  **Compile the Classes:**
+    Ensure all classes are compiled within your project workspace.
+
+2.  **Start the RMI Server:**
+    Run the main method inside `bank.rmi.RMIServer`. This boots the registry and starts listening for network calls.
+    ```bash
+    java bank.rmi.RMIServer
+    ```
+    *Console Output:* `[Server] Bank Server is exported and listening on RMI Registry...`
+
+3.  **Execute the Client Applications:**
+    Run the main method inside `bank.rmi.RMIClient`. The client will fetch the remote stub, invoke transaction routines, and print balance verifications.
+    ```bash
+    java bank.rmi.RMIClient
+    ```
