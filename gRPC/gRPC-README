@@ -1,0 +1,24 @@
+# 🏦 Distributed Banking System (gRPC Implementation)
+
+## 📌 Overview
+This repository contains a modern, high-performance distributed banking client-server application built using **gRPC** and **Protocol Buffers (Protobuf)**. By abstracting the network layer through HTTP/2, this implementation provides exceptional binary serialization performance, bi-directional capability, and tight contract enforcement.
+
+---
+
+## 📐 Protocol Specification & Contract
+
+Unlike platform-dependent solutions, the entire communication layer, operational payload, and procedure signatures are strictly defined inside an IDL (Interface Definition Language) file: `src/main/proto/bank.proto`.
+
+### 🗂️ Service Definition
+```protobuf
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "bank.grpc";
+
+service BankService {
+  rpc Deposit (AmountRequest) returns (ActionResponse);
+  rpc Withdraw (AmountRequest) returns (ActionResponse);
+  rpc Transfer (TransferRequest) returns (ActionResponse);
+  rpc QueryBalance (BalanceRequest) returns (BalanceResponse);
+}
